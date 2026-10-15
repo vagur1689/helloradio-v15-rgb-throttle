@@ -1,71 +1,71 @@
-# V15 Max 油门 RGB 灯
+# V15 Max Throttle RGB LEDs
 
-[下载两版脚本](https://github.com/vagur1689/helloradio-v15-rgb-throttle/archive/refs/heads/main.zip)
+[Download both scripts](https://github.com/vagur1689/helloradio-v15-rgb-throttle/archive/refs/heads/main.zip) · [中文说明](README.zh-CN.md)
 
-用于 **HelloRadio V15 Max 左圈 16 颗灯珠**，提供两种随油门逐颗点亮的效果。无需刷机；先用 `ledid` 校准左圈，再选择一种灯效。自动化测试使用模拟 EdgeTX API，实际灯圈映射和方向需在遥控器上确认。
+Two throttle-driven LED effects for the **HelloRadio V15 Max left gimbal ring (16 LEDs)**. No firmware flashing required. Run `ledid` once to calibrate the left ring, then pick one effect. Automated tests use a simulated EdgeTX API; the actual ring mapping and direction must be confirmed on the radio.
 
-## 两种灯效
+## The two effects
 
-| 脚本 | 效果 | 油门区间 | 满油门 |
+| Script | Behavior | Throttle bands | Full throttle |
 | --- | --- | --- | --- |
-| [thrled2.lua](SCRIPTS/RGBLED/thrled2.lua) | 整圈变色，已亮灯珠一起换色 | 1–30% 绿，31–60% 黄，61–100% 红 | 16 颗红灯 |
-| [thrled.lua](SCRIPTS/RGBLED/thrled.lua) | 固定色区，保留前面已亮灯珠的颜色 | 1–35% 绿区，36–75% 黄区，76–100% 红区 | 6 绿＋6 黄＋4 红 |
+| [thrled2.lua](SCRIPTS/RGBLED/thrled2.lua) | Whole ring changes color; already-lit LEDs switch together | 1–30% green, 31–60% yellow, 61–100% red | 16 red LEDs |
+| [thrled.lua](SCRIPTS/RGBLED/thrled.lua) | Fixed color zones; earlier LEDs keep their color | 1–35% green, 36–75% yellow, 76–100% red | 6 green + 6 yellow + 4 red |
 
-两版都是 0% 熄灭、随油门逐颗点亮，最前端的一颗渐亮；收油门时逐步熄灭。两版可以同时放在 TF 卡上，**同一时间只启用一种**，共用 `thrled.cfg`，切换效果不必重新校准。
+Both start dark at 0%, light up LED by LED as throttle rises, and fade the leading LED in gradually. Lowering throttle turns them off in reverse. Both scripts can live on the TF card at the same time, but **only one may be enabled at a time**. They share `thrled.cfg`, so switching effects does not require recalibration.
 
-固定色区版 `thrled` 的油门行程分配为 **35% 绿、40% 黄、25% 红**：
+The fixed-zone version `thrled` splits the throttle travel as **35% green, 40% yellow, 25% red**:
 
-| 油门 | 灯效（按点亮顺序编号） |
+| Throttle | Effect (numbered in lighting order) |
 | --- | --- |
-| 0% | 熄灭 |
-| 1–35% | 第 1–6 颗绿灯逐颗渐亮 |
-| 36–75% | 保留 6 颗绿灯，第 7–12 颗黄灯逐颗渐亮 |
-| 76–100% | 保留 6 颗绿灯和 6 颗黄灯，第 13–16 颗红灯逐颗渐亮 |
+| 0% | Off |
+| 1–35% | LEDs 1–6 fade in one by one, green |
+| 36–75% | 6 green stay lit; LEDs 7–12 fade in one by one, yellow |
+| 76–100% | 6 green + 6 yellow stay lit; LEDs 13–16 fade in one by one, red |
 
-16 颗灯无法精确按 35%／40%／25% 分成整数颗，采用最接近的 6／6／4 颗，并在每个色区内分别计算填充进度：35% 恰好亮满 6 绿，75% 恰好亮满 6 绿＋6 黄，100% 再加满 4 红。每颗灯的颜色固定，随油门变化的是点亮数量和前端亮度。
+16 LEDs cannot be split into exact 35% / 40% / 25% whole-LED groups, so the closest split of 6 / 6 / 4 is used, and fill progress is computed within each color zone: 35% lights exactly 6 green, 75% exactly 6 green + 6 yellow, and 100% adds the 4 red. Each LED has a fixed color; what changes with throttle is how many are lit and how bright the leading one is.
 
-百分比由摇杆的 `-1024..1024` 读数换算，四舍五入为整数后计算进度。显示的是摇杆行程，不是飞控实际电机输出；灯效只读取 `thr`，不依赖第 3 通道的输出配置。
+Percentages are derived from the stick's `-1024..1024` reading, rounded to a whole number before progress is computed. This reflects stick travel, not the flight controller's actual motor output; the effect only reads `thr` and does not depend on how channel 3 is configured.
 
-## 安装
+## Installation
 
-1. 保持飞机断电，在遥控器上停用已有的 RGB 全局功能和 RGB 特殊功能。只调灯时可关闭高频发射。
-2. 解压下载的仓库 ZIP，把以下三个 Lua 文件放到遥控器 TF 卡对应位置，保留目录内原有文件：
-   - `/SCRIPTS/RGBLED/thrled2.lua`：整圈变色灯效。
-   - `/SCRIPTS/RGBLED/thrled.lua`：固定色区灯效。
-   - `/SCRIPTS/TOOLS/ledid.lua`：左圈校准工具。
-3. 在遥控器的工具列表（Tools）运行 `ledid`。两组灯会分别显示蓝色和绿色，用菜单滚轮选中**左摇杆实际显示的颜色**：`BLUE`（蓝）或 `GREEN`（绿），按下滚轮确认。若同一个灯圈出现混色，先按 EXIT 退出并反馈，不能强行选。
-4. 出现 `Saved` 后，应当只有左圈亮绿色。按 EXIT 退出。工具自动将选择写入 `/SCRIPTS/RGBLED/thrled.cfg`；不用手工编辑 Lua。
-5. 在“全局功能 / Global Functions”新增一项：开关 `ON`，功能 `RGB LED 灯 / RGB leds`，文件选择 `thrled2`（整圈变色）或 `thrled`（固定色区），启用。如果有重复选项，设为 `On` 持续运行。保持其他会写相同灯珠的 RGB 功能停用。
+1. Keep the aircraft powered off, and disable any existing RGB global function and RGB special function on the radio. You can turn off RF transmission while only adjusting LEDs.
+2. Unzip the downloaded repository and copy these three Lua files to the matching locations on the radio's TF card, keeping the existing files in those directories:
+   - `/SCRIPTS/RGBLED/thrled2.lua` — whole-ring color change.
+   - `/SCRIPTS/RGBLED/thrled.lua` — fixed color zones.
+   - `/SCRIPTS/TOOLS/ledid.lua` — left-ring calibration tool.
+3. Run `ledid` from the radio's Tools list. The two LED groups are shown in blue and green respectively; use the menu wheel to select **the color you actually see on the left gimbal**: `BLUE` or `GREEN`, then press the wheel to confirm. If a single ring shows mixed colors, press EXIT to leave and report it — do not force a selection.
+4. After `Saved` appears, only the left ring should be lit green. Press EXIT to leave. The tool writes your choice to `/SCRIPTS/RGBLED/thrled.cfg` automatically; no manual Lua editing is needed.
+5. In **Global Functions**, add an entry: trigger `ON`, function `RGB leds`, file `thrled2` (whole ring) or `thrled` (fixed zones), enabled. If duplicate options appear, set it to `On` so it runs continuously. Keep any other RGB function that writes the same LEDs disabled.
 
-`thrled.cfg` 是校准工具生成的专用数据文件，仓库不预置它，因此不会用猜测的左右映射覆盖已有校准。工具明确保存后会回读确认；按 EXIT 取消则保留之前的校准。重新选择左右灯圈时，先停用当前油门灯效，再运行 `ledid`。
+`thrled.cfg` is a dedicated data file produced by the calibration tool and is not shipped in this repository, so a guessed left/right mapping will never overwrite an existing calibration. The tool reads the value back to confirm after saving; pressing EXIT instead keeps the previous calibration. To re-select the left ring, disable the current throttle effect first, then run `ledid` again.
 
-已经完成校准时，更新对应 Lua 文件并保留 `thrled.cfg`，重启遥控器即可。更换效果时，只需在原来的 RGB 功能项中切换文件名；无需重新校准或刷机。
+If you are already calibrated, just update the corresponding Lua file, keep `thrled.cfg`, and reboot the radio. To switch effects, only change the filename in the existing RGB function entry — no recalibration or flashing needed.
 
-## 验证与恢复
+## Verification and recovery
 
-保持飞机断电，按所选灯效测试：
+Keep the aircraft powered off and test the effect you selected:
 
-- `thrled2`：最低油门全灭；30% 已亮灯珠均为绿色；31% 一起变黄；60% 仍为黄色；61% 一起变红；满油门 16 颗红灯全亮。
-- `thrled`：35% 亮满 6 绿；36% 开始增加第一颗黄灯；75% 亮满 6 绿＋6 黄；76% 开始增加第一颗红灯；满油门为 6 绿＋6 黄＋4 红。收油门时先减红灯，再减黄灯，最后减绿灯，剩余灯珠保持原色。
+- `thrled2`: lowest throttle is fully off; at 30% all lit LEDs are green; at 31% they all turn yellow together; at 60% still yellow; at 61% they all turn red together; at full throttle all 16 LEDs are red.
+- `thrled`: at 35% exactly 6 green are lit; at 36% the first yellow appears; at 75% exactly 6 green + 6 yellow are lit; at 76% the first red appears; at full throttle it is 6 green + 6 yellow + 4 red. Lowering throttle removes red first, then yellow, then green, with the remaining LEDs keeping their color.
 
-本灯效只写已校准的左圈 16 颗灯；右圈在退出校准工具时会熄灭。它不写功能按键灯，不修改通道、混控、模型或高频模块配置。恢复原来灯效时，在原来的 RGB 功能项重新选择原脚本并启用；仅停用脚本可能保留最后一帧。
+This effect only writes the calibrated left ring's 16 LEDs; the right ring is turned off when you exit the calibration tool. It does not write the function-key LEDs and does not modify channels, mixes, models, or RF module configuration. To restore your previous lighting, re-select the original script in the original RGB function entry and enable it; merely disabling a script may leave the last frame lit.
 
-如果出现 `V15 firmware required` 或 `expected 38 LEDs` / `LED layout differs`，先核对当前固件版本。出现 `run ledid in Tools first` 时先完成校准；出现 `cannot write` 或 `save failed` 时检查 TF 卡是否可写。不要删除这些检查条件来强行运行。
+If you see `V15 firmware required` or `expected 38 LEDs` / `LED layout differs`, check the current firmware version first. If `run ledid in Tools first` appears, complete calibration first. If `cannot write` or `save failed` appears, check that the TF card is writable. Do not remove these checks to force the script to run.
 
-## 核实依据
+## Evidence behind this implementation
 
-- 开发时核对的厂商说明书、SD 卡和固件未随本仓库分发。`V15说明书.pdf` 第 8 页确认预装 EdgeTX，第 9 页标明菜单滚轮、SYS 等硬件位置；**官方快速说明书未记载 RGB 油门灯效、灯珠编号或这一 Lua 设置流程**。
-- 原厂 `V15-SD卡工厂文件-CN-20260929/SCRIPTS/RGBLED/` 的说明与脚本证明 `/SCRIPTS/RGBLED/`、`setRGBLedColor`、`applyRGBLedColors` 的用法。该目录的 `Red2.lua` 按每圈 10 灯计算，`gimbal.lua` 明确写了 `hardcoded for tx15`，因此本实现通过实机颜色校准左右，不照搬此示例的接线假设。
-- EdgeTX [V15 硬件定义](https://github.com/EdgeTX/edgetx/blob/65db64b4890c399b8fcc9cc6a3d002c2b86e4706/radio/src/boards/hw_defs/v15.json) 的装饰灯长度为 32、功能按键灯长度为 6；[Lua API](https://github.com/EdgeTX/edgetx/blob/65db64b4890c399b8fcc9cc6a3d002c2b86e4706/radio/src/lua/api_general.cpp) 将它们映射为 Lua 编号 `0..31` 和 `32..37`。物理灯带偏移由固件处理，脚本不再加 6。左圈是哪个 16 灯分组，由用户在校准时确认。
-- 本地 `V15-2.12-20261009EN-NoAi-firmware.uf2` 的 Lua 常量表中，`LED_STRIP_LENGTH = 38`，同时核对了 `LCD_W = 480`、`LCD_H = 272`。这是随附固件的静态证据，不代表已读取用户遥控器当前固件。
-- [RGB 特殊功能源码](https://github.com/EdgeTX/edgetx/blob/65db64b4890c399b8fcc9cc6a3d002c2b86e4706/radio/src/gui/colorlcd/model/special_functions.cpp) 和 [Lua 加载器](https://github.com/EdgeTX/edgetx/blob/65db64b4890c399b8fcc9cc6a3d002c2b86e4706/radio/src/lua/interface.cpp) 确认 RGB 功能从 `/SCRIPTS/RGBLED/` 加载脚本并持续调用 `run`。中文标签为“RGB LED 灯”。上述源码用于解释系统机制，不等于随附厂商固件的逐行源码。
-- 文件保存使用原厂 SD 卡 `SCRIPTS/RF2/PAGES/helpers/settingsHelper.lua` 已使用的 EdgeTX `io.open`、`io.write`、`io.close` 调用形式，读取采用同一 SD 卡脚本中已有的 `io.read(file, size)`。
-- 原厂 `遥控常见问题汇总-中英双语.html` 第 44 条明确说明全局功能和特殊功能同时控制灯光会互相冲突。
-- 参考 [btastic/rgb-throttle-edgetx](https://github.com/btastic/rgb-throttle-edgetx/tree/f902afa35802c99fab949d51e40822a22f5254c3) 的逐颗填充思路。其默认 `0..5` 编号和 `getOutputValue(2)` 针对示例布局与第 3 通道，本实现未沿用这些假设。
+- The vendor manual, SD card contents, and firmware used during development are not distributed with this repository. Page 8 of `V15说明书.pdf` confirms EdgeTX is preinstalled, and page 9 shows the menu wheel and SYS key locations; **the official quick-start manual does not document RGB throttle effects, LED numbering, or this Lua setup flow.**
+- The README and scripts in the stock `V15-SD卡工厂文件-CN-20260929/SCRIPTS/RGBLED/` folder demonstrate the use of `/SCRIPTS/RGBLED/`, `setRGBLedColor`, and `applyRGBLedColors`. That folder's `Red2.lua` assumes 10 LEDs per ring, and `gimbal.lua` explicitly states `hardcoded for tx15`, so this implementation calibrates left/right by actual observed color instead of copying those wiring assumptions.
+- The EdgeTX [V15 hardware definition](https://github.com/EdgeTX/edgetx/blob/65db64b4890c399b8fcc9cc6a3d002c2b86e4706/radio/src/boards/hw_defs/v15.json) gives a decorative strip length of 32 and a function-key strip length of 6; the [Lua API](https://github.com/EdgeTX/edgetx/blob/65db64b4890c399b8fcc9cc6a3d002c2b86e4706/radio/src/lua/api_general.cpp) maps these to Lua indices `0..31` and `32..37`. The physical strip offset is handled by the firmware, so the scripts add no extra 6. Which 16-LED group is the left ring is confirmed by the user during calibration.
+- In the local `V15-2.12-20261009EN-NoAi-firmware.uf2`, the Lua constant table contains `LED_STRIP_LENGTH = 38`, and `LCD_W = 480` / `LCD_H = 272` were verified as well. This is static evidence from the bundled firmware and does not mean the user's currently installed firmware was read.
+- The [RGB special function source](https://github.com/EdgeTX/edgetx/blob/65db64b4890c399b8fcc9cc6a3d002c2b86e4706/radio/src/gui/colorlcd/model/special_functions.cpp) and the [Lua loader](https://github.com/EdgeTX/edgetx/blob/65db64b4890c399b8fcc9cc6a3d002c2b86e4706/radio/src/lua/interface.cpp) confirm that the RGB function loads scripts from `/SCRIPTS/RGBLED/` and calls `run` continuously. The Chinese label is "RGB LED 灯". The sources above explain system mechanics and are not line-by-line source for the bundled vendor firmware.
+- File saving uses the same EdgeTX `io.open`, `io.write`, and `io.close` call forms already used by `SCRIPTS/RF2/PAGES/helpers/settingsHelper.lua` on the stock SD card; reading uses `io.read(file, size)`, also already present in scripts on that card.
+- Item 44 of the stock `遥控常见问题汇总-中英双语.html` states explicitly that controlling lights from both Global Functions and Special Functions at the same time causes conflicts.
+- The per-LED fill approach is inspired by [btastic/rgb-throttle-edgetx](https://github.com/btastic/rgb-throttle-edgetx/tree/f902afa35802c99fab949d51e40822a22f5254c3). Its default `0..5` numbering and `getOutputValue(2)` target that project's example layout and channel 3; this implementation does not carry over those assumptions.
 
-## 本地验证
+## Local verification
 
-在本目录执行：
+Run these in this directory:
 
 ~~~sh
 luac -p SCRIPTS/RGBLED/thrled.lua
@@ -74,4 +74,4 @@ luac -p SCRIPTS/TOOLS/ledid.lua
 lua tests/run.lua
 ~~~
 
-测试模拟 EdgeTX API 和 TF 卡，检查两版配色边界、增减油门时的灯珠状态、两种效果和左右映射各自全部 2049 个摇杆值的单调性、越界输入、配置缺失、校准保存与取消、写入失败，以及只更新选中的灯圈。**这些检查不能替代真机的颜色选择、旋转方向、实际灯效与菜单验证。**
+The tests simulate the EdgeTX API and the TF card, covering both color-band boundaries, LED state when throttle rises and falls, monotonicity across all 2049 stick values for both effects and both left/right mappings, out-of-range input, a missing config, calibration save and cancel, write failure, and updating only the selected ring. **These checks cannot replace confirming color selection, rotation direction, actual effect, and menus on a real radio.**
