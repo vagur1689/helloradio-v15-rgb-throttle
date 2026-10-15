@@ -4,6 +4,12 @@
 
 Two throttle-driven LED effects for the **HelloRadio V15 Max left gimbal ring (16 LEDs)**. No firmware flashing required. Run `ledid` once to calibrate the left ring, then pick one effect. Automated tests use a simulated EdgeTX API; the actual ring mapping and direction must be confirmed on the radio.
 
+## Demo
+
+![V15 Max throttle LEDs lighting up with throttle](docs/throttle-led-demo.gif)
+
+The left gimbal ring lights up LED by LED as throttle rises.
+
 ## The two effects
 
 | Script | Behavior | Throttle bands | Full throttle |
